@@ -1,0 +1,8 @@
+venv
+build
+x64
+.env
+*.exe
+*.obj
+__pycache__
+tools/temp_combined.py

@@ -1,0 +1,69 @@
+version: "3"
+
+dotenv: [".env"]
+
+vars:
+  VENV_BIN_DIR: .venv/bin
+  MSVC_GENERATOR: "Visual Studio 17 2022"
+  GCC_GENERATOR: "Unix Makefiles"
+  NINJA_GENERATOR: "Ninja"
+  XCODE_GENERATOR: "Xcode"
+  CMAKE_GENERATOR: "{{.XCODE_GENERATOR}}"
+  BUILD_TYPE: "Release"
+  BINARY_PATH:
+    sh: |
+      if [[ "$(uname)" == "Darwin" ]] && [[ "{{.CMAKE_GENERATOR}}" == "Xcode" ]]; then
+        echo "./build/src/{{.BUILD_TYPE}}/main"
+      elif [[ "$(uname)" == "Linux" ]] || [[ "$(uname)" == "Darwin" ]]; then
+        echo "./build/src/main"
+      else
+        echo "./build/src/{{.BUILD_TYPE}}/main.exe"
+      fi
+
+silent: true
+
+tasks:
+  check-py:
+    cmds:
+      - uvx ruff check --fix
+      - uvx ruff format
+
+  clean:venv:
+    cmds:
+      - rm -rf .venv
+
+  clean:build:
+    cmds:
+      - rm -rf build
+
+  run:client:
+    cmds:
+      - "uv run src/client.py"
+  
+  run:api:
+    cmds:
+      - "uv run src/api.py"
+  
+  run:tools:
+    cmds:
+      - task: check-py
+      - "uv run tools/combine_files.py"
+      - "uv run tools/update_main_cpp.py"
+
+  run:cmake:
+    desc: Build the project with CMake and run the executable
+    cmds:
+      - mkdir -p build
+      - cd build && cmake .. -G "{{.CMAKE_GENERATOR}}" -DCMAKE_BUILD_TYPE="{{.BUILD_TYPE}}" && cmake --build . --config "{{.BUILD_TYPE}}"
+      - "{{.BINARY_PATH}} {{if .CLI_ARGS}} {{.CLI_ARGS}} {{end}}"
+
+  up:
+    cmds:
+      - task: clean:build
+      - task: run:cmake
+        vars:
+          CLI_ARGS: "{{.CLI_ARGS}}"
+
+  # Example usage:
+  # task up -- -c  # Passes the -c flag to the binary
+  # task up  # Runs the binary without any arguments
