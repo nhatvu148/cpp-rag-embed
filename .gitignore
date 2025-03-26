@@ -7,3 +7,4 @@ x64
 __pycache__
 tools/temp_combined.py
 .DS_Store
+**/.DS_Store
