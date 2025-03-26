@@ -6,3 +6,4 @@ x64
 *.obj
 __pycache__
 tools/temp_combined.py
+.DS_Store
